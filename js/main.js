@@ -3,6 +3,8 @@
 var gBoard;
 var gIsFirstMove;
 var gGameTimer = null;
+var gHintMode = false;
+var gHintUsed = false;
 var gGame = {
   isOn: true,
   shownCount: 0,
@@ -59,10 +61,12 @@ function renderBoard(board) {
     strHTML += `<tr class="sweeper-row" >\n`;
     for (var j = 0; j < board[0].length; j++) {
       const cell = board[i][j];
-      var cellContent =
-        cell.isShown && !cell.isMine && cell.minesAroundCount !== 0
-          ? +cell.minesAroundCount
-          : " ";
+      var cellContent = "";
+      if (cell.isShown && !cell.isMine) {
+        cellContent =
+          cell.minesAroundCount !== 0 ? +cell.minesAroundCount : " ";
+        className += " mines-around-" + +cell.minesAroundCount;
+      }
       // TODO: handle the if's better
       var className = cell.isMine ? "mine " : "";
       var imgClass = !cell.isMarked ? "hide" : "";
@@ -123,7 +127,16 @@ function getMinesNegsCount(board, rowIdx, colIdx) {
 
 function onCellClicked(elCell, i, j) {
   const cell = gBoard[i][j];
+
   if (!gGame.isOn) return;
+  // if (gHintMode) {
+  //   if (!cell.isShown) {
+  //     useHint(gBoard, i, j);
+  //     gHintUsed = true;
+  //   }
+  //   if (gHintUsed) {
+  //     gHintMode = false;
+  //   } else {
   if (cell.isMarked) return;
 
   if (gIsFirstMove) {
@@ -139,6 +152,7 @@ function onCellClicked(elCell, i, j) {
 
 function revealCell(elCell, i, j) {
   const cell = gBoard[i][j];
+
   if (cell.isMarked) return;
   if (cell.isMine) {
     if (gGame.livesLeft > 0) {
@@ -350,29 +364,28 @@ function updateCell(i, j) {
 
   elCell.className = "cell";
 
-  if (cell.isMine) {
-    elCell.classList.add("mine");
-  }
-  if (cell.isMarked) {
-    elCell.classList.add("marked");
-  }
-  if (cell.isShown) {
-    elCell.classList.add("shown");
+  if (cell.isMine) elCell.classList.add("mine");
+  if (cell.isMarked) elCell.classList.add("marked");
+  if (cell.isShown) elCell.classList.add("shown");
+
+  if (cell.isShown && !cell.isMine && cell.minesAroundCount !== 0) {
+    elCell.classList.add("mines-around-" + cell.minesAroundCount);
   }
 
   var cellContent =
     cell.isShown && !cell.isMine && cell.minesAroundCount !== 0
-      ? +cell.minesAroundCount
-      : " ";
-
-  var imgClass = !cell.isMarked ? "hide" : "";
-  var imgSrc = cell.isMarked ? "img/flag.png" : "";
+      ? cell.minesAroundCount
+      : "";
+  var imgClass = cell.isMarked ? "" : "hide";
+  var imgSrc = "img/flag.png";
   if (cell.isMine && cell.isShown) {
     imgSrc = "img/mine.png";
-    imgClass = " ";
+    imgClass = "";
   }
+
   elCell.innerHTML = `${cellContent}<img class="${imgClass}" src="${imgSrc}">`;
 }
+
 function toggleDarkLightMode() {
   let body = document.body;
   if (body.getAttribute("data-theme") === "dark") {
@@ -432,4 +445,56 @@ function updateHighScore(difficulty) {
   }
   var spanHighScore = document.querySelector(".highScoreSpan");
   spanHighScore.textContent = highScore || "";
+}
+function activateHint(elBtn) {
+  if (gIsFirstMove) {
+    alert("You have to click at least 1 cell!");
+    return;
+  }
+  var hintsNum = 0;
+  if (!gHintMode && hintsNum < 3) {
+    gHintMode = true;
+    gHintUsed = false;
+    elBtn.classList.add("hide");
+    hintsNum++;
+  } else {
+    return;
+  }
+}
+
+function useHint(board, rowIdx, colIdx) {
+  if (board[rowIdx][colIdx].isShown) return;
+  var revealedCells = [];
+
+  for (var i = rowIdx - 1; i <= rowIdx + 1; i++) {
+    if (i < 0 || i >= board.length) continue;
+    for (var j = colIdx - 1; j <= colIdx + 1; j++) {
+      // if (i === rowIdx && j === colIdx) continue;
+      if (j < 0 || j >= board[0].length) continue;
+      if (gBoard[i][j].isShown) continue;
+
+      var currCell = board[i][j];
+      //model
+      currCell.isShown = true;
+      //selecting for array
+      var elCurrCell = document.querySelector(`[data-i="${i}"][data-j="${j}"]`);
+      // //dom
+      updateCell(i, j);
+      revealedCells.push(elCurrCell);
+    }
+  }
+
+  setTimeout(function () {
+    var k = revealedCells.length;
+
+    while (k--) {
+      var currRevealedCell = revealedCells[k];
+      var i = currRevealedCell.getAttribute("data-i");
+      var j = currRevealedCell.getAttribute("data-j");
+      gBoard[i][j].isShown = false;
+      currRevealedCell.classList.remove("shown");
+      updateCell(i, j);
+    }
+    revealedCells.length = 0;
+  }, 1000);
 }
