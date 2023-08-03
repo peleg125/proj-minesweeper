@@ -6,15 +6,33 @@
     <meta http-equiv="X-UA-Compatible" content="ie=edge" />
     <title>Minesweeper</title>
     <link rel="stylesheet" href="css/main.css" />
+    <button class="themeButton" onclick="toggleDarkLightMode()">
+      Toggle Dark Mode
+    </button>
   </head>
 
   <body onload="onInit()">
-    <p>Mines Remaining: <span>0</span></p>
-    <p>time passed: <span>0</span></p>
-    <table class="sweeper-table">
-      <tbody class="sweeper-cells"></tbody>
-    </table>
+    <div class="container">
+      <div>
+        <button onclick="setGameLevel(0)">Easy</button>
+        <button onclick="setGameLevel(1)">Medium</button>
+        <button onclick="setGameLevel(2)">Hard</button>
+      </div>
 
+      <p>Mines: <span class="minesCountSpan"></span></p>
+      <p>time passed: <span class="timeSpan">0</span></p>
+      <p>Lives left: <span class="lifeSpan"></span></p>
+
+      <div>
+        <button onclick="restartGame()">
+          <img class="smiliy" src="img/normal_smilie.jpeg" />
+        </button>
+      </div>
+
+      <table class="sweeper-table">
+        <tbody class="sweeper-cells"></tbody>
+      </table>
+    </div>
     <script src="js/main.js"></script>
     <script src="js/utils.js"></script>
     <footer>
@@ -22,3 +40,41 @@
     </footer>
   </body>
 </html>
+
+<!-- <!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta http-equiv="X-UA-Compatible" content="ie=edge" />
+    <title>Minesweeper</title>
+    <link rel="stylesheet" href="css/main.css" />
+  </head>
+
+  <body onload="onInit()">
+    <div>
+      <button onclick="setGameLevel(0)">Easy</button>
+      <button onclick="setGameLevel(1)">Medium</button>
+      <button onclick="setGameLevel(2)">Hard</button>
+    </div>
+
+    <p>Mines: <span class="minesCountSpan"></span></p>
+    <p>time passed: <span class="timeSpan">0</span></p>
+    <p>Lives left: <span class="lifeSpan"></span></p>
+
+    <div>
+      <button onclick="restartGame()">
+        <img class="smiliy" src="img/normal_smilie.jpeg" />
+      </button>
+    </div>
+
+    <table class="sweeper-table">
+      <tbody class="sweeper-cells"></tbody>
+    </table>
+    <script src="js/main.js"></script>
+    <script src="js/utils.js"></script>
+    <footer>
+      <p>Peleg Mischel</p>
+    </footer>
+  </body>
+</html> -->
