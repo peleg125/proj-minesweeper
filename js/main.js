@@ -26,12 +26,11 @@ var gLevel = [
 ];
 var gCurrLevel = gLevel[0];
 //eventlisteners
+
 document.addEventListener("contextmenu", (event) => event.preventDefault());
 
 function onInit() {
   gGame.isOn = true;
-  // gCurrLevelSize = gLevel[0].SIZE;
-  // gCurrLevelMines = gLevel[0].MINES;
   gBoard = buildBoard();
   renderBoard(gBoard);
   gIsFirstMove = true;
@@ -143,8 +142,9 @@ function revealCell(elCell, i, j) {
   if (cell.isMarked) return;
   if (cell.isMine) {
     if (gGame.livesLeft > 0) {
+      //model
       gGame.livesLeft--;
-      console.log("elCell before mineIndication: ", elCell);
+      //dom
       mineIndication(elCell);
       updateScore();
     } else {
@@ -165,8 +165,6 @@ function revealCell(elCell, i, j) {
 
     //dom
     updateCell(i, j);
-
-    console.log("shown without number");
     expandShown(gBoard, i, j);
   }
 
@@ -188,19 +186,21 @@ function onCellMarked(i, j) {
   if (cell.isMarked) {
     // model
     cell.isMarked = false;
+    gGame.markedCount--;
+
     //dom
     updateCell(i, j);
-
-    gGame.markedCount--;
+    updateScore();
   } else if (gGame.markedCount >= limitMark) {
     alert(`Can't mark more than number of mines!`);
   } else if (!cell.isMarked) {
     //model
     cell.isMarked = true;
+    gGame.markedCount++;
+
     //dom
     updateCell(i, j);
-
-    gGame.markedCount++;
+    updateScore();
   }
 
   checkGameOver();
@@ -239,11 +239,7 @@ function expandShown(board, rowIdx, colIdx) {
       gGame.shownCount++;
 
       //dom
-      var elNeighborCell = document.querySelector(
-        `[data-i="${i}"][data-j="${j}"]`
-      );
-      elNeighborCell.classList.add("shown");
-
+      updateCell(i, j);
       expandShown(board, i, j);
     }
   }
@@ -259,17 +255,11 @@ function checkGameOver() {
   return false;
 }
 function setVictory() {
-  // var restart = confirm("Victory!");
-  // if (restart) {
-  //   setGameLevel(0);
-  // } else {
-  //   return;
-  // }
-  console.log("victory!");
   gGame.isOn = false;
   clearInterval(gGameTimer);
   const elSmileImg = document.querySelector(".smiliy");
   elSmileImg.src = "img/win_smiliy.jpeg";
+  handleHighScore(gGame.secsPassed, getCurrentLevelIndex());
 }
 
 function setGameLevel(num) {
@@ -284,6 +274,7 @@ function setGameLevel(num) {
   gGame.markedCount = 0;
   gGame.shownCount = 0;
   gCurrLevel = gLevel[num];
+  updateHighScore(num);
   onInit();
 }
 
@@ -348,10 +339,7 @@ function setDefeat() {
 }
 
 function mineIndication(elCell) {
-  console.log("elCell in mineIndication: ", elCell);
-
   elCell.style.backgroundColor = "orange";
-  // void elCell.offsetHeight;
   setTimeout(function () {
     elCell.style.backgroundColor = "";
   }, 2000);
@@ -370,9 +358,6 @@ function updateCell(i, j) {
   }
   if (cell.isShown) {
     elCell.classList.add("shown");
-  }
-  if (elCell.classList.contains("danger")) {
-    return console.log("DangeR!!!");
   }
 
   var cellContent =
@@ -395,4 +380,56 @@ function toggleDarkLightMode() {
   } else {
     body.setAttribute("data-theme", "dark");
   }
+}
+
+function handleHighScore(newScore, difficulty) {
+  const elHighScoreSpan = document.querySelector(".highScoreSpan");
+  //parseInt to convert string(from localstorage) to number(int)
+  var highScoreEasy = parseInt(localStorage.getItem("scoreEasy"));
+  var highScoreMedium = parseInt(localStorage.getItem("scoreMed"));
+  var highScoreHard = parseInt(localStorage.getItem("scoreHard"));
+  switch (difficulty) {
+    case 0:
+      if (isNaN(highScoreEasy) || newScore < highScoreEasy) {
+        localStorage.setItem("scoreEasy", newScore);
+        highScoreEasy = newScore;
+        elHighScoreSpan.innerText += `${highScoreEasy}`;
+      }
+      break;
+    case 1:
+      if (isNaN(highScoreMedium) || newScore < highScoreMedium) {
+        localStorage.setItem("scoreMed", newScore);
+
+        highScoreMedium = newScore;
+        elHighScoreSpan.innerText += `${highScoreMedium}`;
+      }
+      break;
+    case 2:
+      if (isNaN(highScoreHard) || newScore < highScoreHard) {
+        localStorage.setItem("scoreHard", newScore);
+        highScoreHard = newScore;
+
+        elHighScoreSpan.innerText += `${highScoreHard}`;
+      }
+      break;
+    default:
+      console.log("No such difficulty");
+  }
+}
+function updateHighScore(difficulty) {
+  var highScore;
+
+  switch (difficulty) {
+    case 0:
+      highScore = localStorage.getItem("scoreEasy");
+      break;
+    case 1:
+      highScore = localStorage.getItem("scoreMed");
+      break;
+    case 2:
+      highScore = localStorage.getItem("scoreHard");
+      break;
+  }
+  var spanHighScore = document.querySelector(".highScoreSpan");
+  spanHighScore.textContent = highScore || "";
 }
