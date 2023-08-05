@@ -5,6 +5,8 @@ var gIsFirstMove;
 var gGameTimer = null;
 var gHintMode = false;
 var gHintUsed = false;
+var gLastHintUsed = "";
+var gameHistory = [];
 var gGame = {
   isOn: true,
   shownCount: 0,
@@ -12,6 +14,7 @@ var gGame = {
   secsPassed: 0,
   livesLeft: 3,
 };
+
 var gLevel = [
   {
     SIZE: 4,
@@ -35,7 +38,10 @@ function onInit() {
   gGame.isOn = true;
   gBoard = buildBoard();
   renderBoard(gBoard);
+  saveMove(gGame, gBoard);
   gIsFirstMove = true;
+  gameHistory = [];
+  renderHints();
 }
 
 function buildBoard() {
@@ -82,9 +88,16 @@ function renderBoard(board) {
       if (cell.isShown) {
         className += "shown ";
       }
+      // if (cell.isShown && !cell.isMine && cell.minesAroundCount !== 0) {
+      //   elCell.classList.add("mines-around-" + cell.minesAroundCount);
+      // }
 
       strHTML += `\t<td data-i="${i}" data-j="${j}"
-                               class="cell ${className}"
+                               class="cell ${className} mines-around-${
+        cell.isShown && !cell.isMine && cell.minesAroundCount !== 0
+          ? cell.minesAroundCount
+          : ""
+      } "
                               onclick="onCellClicked(this, ${i}, ${j})" oncontextmenu="onCellMarked(${i},${j})">${cellContent}
                               <img class="${imgClass}" src="${imgSrc}">
 </td>\n`;
@@ -129,14 +142,17 @@ function onCellClicked(elCell, i, j) {
   const cell = gBoard[i][j];
 
   if (!gGame.isOn) return;
-  // if (gHintMode) {
-  //   if (!cell.isShown) {
-  //     useHint(gBoard, i, j);
-  //     gHintUsed = true;
-  //   }
-  //   if (gHintUsed) {
-  //     gHintMode = false;
-  //   } else {
+  if (gHintMode) {
+    if (!cell.isShown) {
+      useHint(gBoard, i, j);
+      gHintMode = false;
+      gHintUsed = true;
+      return;
+    }
+  }
+  // if (gHintUsed) {
+  //   gHintMode = false;
+  // } else {
   if (cell.isMarked) return;
 
   if (gIsFirstMove) {
@@ -148,6 +164,7 @@ function onCellClicked(elCell, i, j) {
   }
   revealCell(elCell, i, j);
   updateCell(i, j);
+  saveMove(gGame, gBoard);
 }
 
 function revealCell(elCell, i, j) {
@@ -216,9 +233,9 @@ function onCellMarked(i, j) {
     updateCell(i, j);
     updateScore();
   }
+  saveMove(gGame, gBoard);
 
   checkGameOver();
-
   return;
 }
 
@@ -289,6 +306,7 @@ function setGameLevel(num) {
   gGame.shownCount = 0;
   gCurrLevel = gLevel[num];
   updateHighScore(num);
+  renderHints();
   onInit();
 }
 
@@ -353,6 +371,8 @@ function setDefeat() {
 }
 
 function mineIndication(elCell) {
+  if (gHintMode) return;
+
   elCell.style.backgroundColor = "orange";
   setTimeout(function () {
     elCell.style.backgroundColor = "";
@@ -444,7 +464,11 @@ function updateHighScore(difficulty) {
       break;
   }
   var spanHighScore = document.querySelector(".highScoreSpan");
-  spanHighScore.textContent = highScore || "";
+  if (highScore) {
+    spanHighScore.textContent = `${highScore} seconds`;
+  } else {
+    spanHighScore.textContent = " - No highscore yet!";
+  }
 }
 function activateHint(elBtn) {
   if (gIsFirstMove) {
@@ -455,7 +479,8 @@ function activateHint(elBtn) {
   if (!gHintMode && hintsNum < 3) {
     gHintMode = true;
     gHintUsed = false;
-    elBtn.classList.add("hide");
+    elBtn.style.backgroundColor = "yellow";
+    gLastHintUsed = elBtn;
     hintsNum++;
   } else {
     return;
@@ -496,5 +521,80 @@ function useHint(board, rowIdx, colIdx) {
       updateCell(i, j);
     }
     revealedCells.length = 0;
+    gLastHintUsed.classList.add("hide");
+    gLastHintUsed = "";
   }, 1000);
+}
+
+function renderHints() {
+  var strHTML = "";
+  strHTML += `  <img
+  class="bulb hintBtn1"
+  src="img/hint.png"
+  onclick="activateHint(this)"
+/>
+<img
+  class="bulb hintBtn2"
+  src="img/hint.png"
+  onclick="activateHint(this)"
+/>
+<img
+  class="bulb hintBtn3"
+  src="img/hint.png"
+  onclick="activateHint(this)"
+/>`;
+  const elHints = document.querySelector(".hints");
+  elHints.innerHTML = strHTML;
+}
+function saveMove(game, board) {
+  var gameCopyBoard = [];
+  for (var i = 0; i < board.length; i++) {
+    gameCopyBoard[i] = [];
+    for (var j = 0; j < board[i].length; j++) {
+      var cell = {};
+      for (var prop in board[i][j]) {
+        cell[prop] = board[i][j][prop];
+      }
+      gameCopyBoard[i][j] = cell;
+    }
+  }
+  var gameCopy = {};
+  for (var prop in game) {
+    if (prop !== "secsPassed") {
+      gameCopy[prop] = game[prop];
+    }
+  }
+  gameHistory.push({ game: gameCopy, board: gameCopyBoard });
+  console.log("Here!");
+}
+
+function undoMove() {
+  if (!gGame.isOn) return;
+  if (!gameHistory.length) {
+    console.log("Nope!");
+    return;
+  } else {
+    var lastState = gameHistory.pop();
+
+    var lastGameState = lastState.game;
+    for (var prop in lastGameState) {
+      gGame[prop] = lastGameState[prop];
+    }
+    var lastBoardState = lastState.board;
+    gBoard = [];
+    for (var i = 0; i < lastBoardState.length; i++) {
+      gBoard[i] = [];
+      for (var j = 0; j < lastBoardState[i].length; j++) {
+        var cell = {};
+        for (prop in lastBoardState[i][j]) {
+          cell[prop] = lastBoardState[i][j][prop];
+        }
+        gBoard[i].push(cell);
+        // updateCell(i, j);
+      }
+    }
+  }
+  renderBoard(gBoard);
+
+  updateScore();
 }

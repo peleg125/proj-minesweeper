@@ -35,8 +35,8 @@ body {
   table-layout: fixed;
 }
 .cell {
-  width: 25px;
-  height: 30px;
+  width: 35px;
+  height: 40px;
   background-color: var(--other-color);
   text-align: center;
   border: 0;
@@ -54,6 +54,7 @@ p {
 .marked {
   cursor: crosshair;
 }
+
 .shown.mine {
   background-color: red;
 }
@@ -74,10 +75,11 @@ footer {
 .hide {
   display: none;
 }
-.cell img {
+.cell .marked img {
+  object-fit: cover;
+  object-position: center;
   height: 100%;
   width: 100%;
-  object-fit: cover;
 }
 .smiliy {
   width: 70px;
@@ -113,5 +115,5 @@ footer {
 .bulb {
   height: 60px;
   margin: 0 20px;
-  background-color: yellow;
+  /* background-color: yellow; */
 }
